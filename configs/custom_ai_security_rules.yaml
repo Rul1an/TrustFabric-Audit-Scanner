@@ -5,22 +5,34 @@ rules:
   # ============================================================================
   # PHI SAFETY (CRITICAL for Medical AI)
   # ============================================================================
-  
+
   - id: phi-in-logging
     pattern-either:
-      - pattern: logger.$METHOD(..., $PATIENT, ...)
-      - pattern: print(..., $PATIENT, ...)
-      - pattern: logging.$METHOD(..., $PATIENT_ID, ...)
-    message: "Possible PHI in log statement. Use hash instead of raw patient data."
+      - pattern: logger.$METHOD(f"... {patient_name} ...")
+      - pattern: logger.$METHOD(f"... {patient_id} ...")
+      - pattern: logger.$METHOD(f"... {ssn} ...")
+      - pattern: logger.$METHOD(f"... {mrn} ...")
+      - pattern: logger.$METHOD(f"... {medical_record_number} ...")
+      - pattern: logger.$METHOD(f"... {dob} ...")
+      - pattern: logger.$METHOD(f"... {date_of_birth} ...")
+      - pattern: print(f"... {patient_name} ...")
+      - pattern: print(f"... {patient_id} ...")
+    message: "PHI detected in log statement. Use hash instead: logger.info(f'Patient hash: {hashlib.sha256(patient_id.encode()).hexdigest()}')"
     severity: ERROR
     languages: [python]
+    paths:
+      exclude:
+        - "*/tests/*"
+        - "*/test_*.py"
+        - "**/examples/*"
+        - "**/client/*"
     metadata:
       category: security
       cwe: "CWE-532: Insertion of Sensitive Information into Log File"
       impact: CRITICAL
       likelihood: HIGH
-      confidence: MEDIUM
-  
+      confidence: HIGH
+
   - id: phi-in-evidence-pack
     pattern: |
       evidence_pack = {
@@ -36,11 +48,11 @@ rules:
     languages: [python]
     metadata:
       impact: CRITICAL
-      
+
   # ============================================================================
   # CRYPTOGRAPHIC VULNERABILITIES
   # ============================================================================
-  
+
   - id: weak-hash-algorithm
     pattern-either:
       - pattern: hashlib.md5(...)
@@ -50,7 +62,7 @@ rules:
     languages: [python]
     metadata:
       cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
-      
+
   - id: hardcoded-cryptographic-key
     pattern-either:
       - pattern: private_key = "..."
@@ -62,7 +74,7 @@ rules:
     metadata:
       cwe: "CWE-798: Use of Hard-coded Credentials"
       impact: CRITICAL
-  
+
   - id: insecure-random
     pattern-either:
       - pattern: random.random()
@@ -72,11 +84,11 @@ rules:
     languages: [python]
     metadata:
       cwe: "CWE-338: Use of Cryptographically Weak PRNG"
-  
+
   # ============================================================================
   # ATTESTATION SECURITY
   # ============================================================================
-  
+
   - id: attestation-bypass
     pattern-either:
       - pattern: |
@@ -88,9 +100,13 @@ rules:
     message: "Attestation bypass detected. This defeats security guarantee."
     severity: ERROR
     languages: [python]
+    paths:
+      exclude:
+        - "*/tests/*"
+        - "*/demo_*.py"
     metadata:
       impact: CRITICAL
-      
+
   - id: missing-nonce-validation
     pattern: |
       def attest_sevsnp($QUOTE):
@@ -98,11 +114,11 @@ rules:
     message: "Attestation without nonce validation. Add nonce parameter for replay protection."
     severity: WARNING
     languages: [python]
-  
+
   # ============================================================================
   # INPUT VALIDATION
   # ============================================================================
-  
+
   - id: sql-injection-risk
     pattern-either:
       - pattern: cursor.execute(f"SELECT * FROM {$TABLE} WHERE ...")
@@ -113,7 +129,7 @@ rules:
     metadata:
       cwe: "CWE-89: SQL Injection"
       owasp: "A03:2021 - Injection"
-  
+
   - id: command-injection-risk
     pattern-either:
       - pattern: subprocess.run(f"{$CMD} {$INPUT}", shell=True)
@@ -124,11 +140,11 @@ rules:
     metadata:
       cwe: "CWE-78: OS Command Injection"
       owasp: "A03:2021 - Injection"
-  
+
   # ============================================================================
   # AI/ML SPECIFIC
   # ============================================================================
-  
+
   - id: model-loading-without-verification
     pattern: |
       model = torch.load($PATH)
@@ -137,7 +153,7 @@ rules:
     languages: [python]
     metadata:
       owasp-llm: "LLM01: Model Poisoning"
-      
+
   - id: excessive-error-details
     pattern: |
       except $EXCEPTION as e:

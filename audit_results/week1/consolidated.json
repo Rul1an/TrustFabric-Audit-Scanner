@@ -2,18 +2,18 @@
   "scans": [
     {
       "tool": "phi_detection",
-      "findings_count": 1,
+      "findings_count": 0,
       "summary": {
-        "total": 1
+        "total": 0
       }
     },
     {
       "tool": "semgrep",
-      "findings_count": 700,
+      "findings_count": 3,
       "summary": {}
     }
   ],
-  "total_findings": 701,
+  "total_findings": 3,
   "by_severity": {
     "CRITICAL": 0,
     "HIGH": 0,

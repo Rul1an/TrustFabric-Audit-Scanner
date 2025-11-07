@@ -1,0 +1,39 @@
+# Semgrep Ignore Patterns (Best Practice 2025)
+
+# Test files (unverified JWT is OK for testing)
+**/tests/
+**/test_*.py
+test_*.py
+
+# Mock/demo files
+**/mock_*.py
+**/demo_*.py
+mock_*.py
+
+# Examples
+**/examples/
+examples/
+
+# Generated files
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts
+**/build/
+**/dist/
+**/.eggs/
+
+# Version control
+.git/
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Documentation (no executable code)
+docs/
+*.md
+

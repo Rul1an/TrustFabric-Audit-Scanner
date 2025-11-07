@@ -10,25 +10,25 @@ from datetime import datetime
 class ReportGenerator:
     def __init__(self, results_dir: str = "audit_results/week1"):
         self.results_dir = Path(results_dir)
-    
+
     def generate(self, output_file: str = "SECURITY_ASSESSMENT_REPORT.md") -> str:
         """Generate markdown security report"""
         print("📝 Generating security assessment report...")
-        
+
         # Load consolidated results
         consolidated_file = self.results_dir / "consolidated.json"
         if not consolidated_file.exists():
             print("   ✗ Run consolidator first: python3 scanners/consolidator.py")
             return ""
-        
+
         with open(consolidated_file) as f:
             data = json.load(f)
-        
+
         # Generate report
         report = f"""# TrustFabric Security Assessment Report
 
-**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
-**Audit Period:** Week 1 (Automated Scanning)  
+**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Audit Period:** Week 1 (Automated Scanning)
 **Scope:** Cryptographic modules, attestation, PHI safety, dependencies
 
 ---
@@ -39,10 +39,10 @@ class ReportGenerator:
 
 **By Tool:**
 """
-        
+
         for scan in data['scans']:
             report += f"- **{scan['tool']}:** {scan['findings_count']} findings\n"
-        
+
         report += """
 
 ---
@@ -83,22 +83,22 @@ See individual tool reports in `audit_results/week1/`:
 
 ## Next Steps
 
-**Week 2:** External security audit (penetration test + code review)  
-**Week 3:** Remediation (fix findings, re-test)  
+**Week 2:** External security audit (penetration test + code review)
+**Week 3:** Remediation (fix findings, re-test)
 **Week 4:** Sign-off (security assessment, Go/No-Go decision)
 
 ---
 
-**Status:** Automated scanning complete  
+**Status:** Automated scanning complete
 **Next:** Manual review + external audit
 """
-        
+
         # Save report
         with open(output_file, 'w') as f:
             f.write(report)
-        
+
         print(f"   ✓ Report generated: {output_file}")
-        
+
         return output_file
 
 if __name__ == "__main__":

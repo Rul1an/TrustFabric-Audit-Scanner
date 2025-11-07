@@ -1,18 +1,18 @@
 # TrustFabric Security Assessment Report
 
-**Date:** 2025-11-07 10:25:26  
-**Audit Period:** Week 1 (Automated Scanning)  
+**Date:** 2025-11-07 10:49:35
+**Audit Period:** Week 1 (Automated Scanning)
 **Scope:** Cryptographic modules, attestation, PHI safety, dependencies
 
 ---
 
 ## Executive Summary
 
-**Total Findings:** 701
+**Total Findings:** 3
 
 **By Tool:**
-- **phi_detection:** 1 findings
-- **semgrep:** 700 findings
+- **phi_detection:** 0 findings
+- **semgrep:** 3 findings
 
 
 ---
@@ -53,11 +53,11 @@ See individual tool reports in `audit_results/week1/`:
 
 ## Next Steps
 
-**Week 2:** External security audit (penetration test + code review)  
-**Week 3:** Remediation (fix findings, re-test)  
+**Week 2:** External security audit (penetration test + code review)
+**Week 3:** Remediation (fix findings, re-test)
 **Week 4:** Sign-off (security assessment, Go/No-Go decision)
 
 ---
 
-**Status:** Automated scanning complete  
+**Status:** Automated scanning complete
 **Next:** Manual review + external audit
