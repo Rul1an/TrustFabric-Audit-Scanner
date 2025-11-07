@@ -1,6 +1,6 @@
 # AI Security Audit - Presentation Slide
 
-**Voor:** RhythmIQ Demo  
+**Voor:** RhythmIQ Demo
 **Timing:** Show after architecture/compliance slides (optional, if asked about security)
 
 ---
@@ -57,7 +57,7 @@
 
 **Our plan** before processing real PHI:
 1. **Automated scanning** (SAST, SCA, secrets) - Week 1
-2. **External security firm** (penetration test) - Week 2  
+2. **External security firm** (penetration test) - Week 2
 3. **Remediation** (fix all critical findings) - Week 3
 
 **Current status:**
@@ -65,7 +65,7 @@
 - Code follows RFC/NIST standards ✅
 - Ready for external audit when pilot confirmed
 
-**Cost:** €5-10k (industry standard for medical AI)  
+**Cost:** €5-10k (industry standard for medical AI)
 **Timeline:** 3 weeks parallel with DCasv5 deployment"
 
 ---
@@ -114,7 +114,7 @@ Process:
 
 ---
 
-**Use:** Only if RhythmIQ asks about security audit  
-**Impact:** HIGH (shows maturity)  
+**Use:** Only if RhythmIQ asks about security audit
+**Impact:** HIGH (shows maturity)
 **Risk:** LOW (honest, no overpromising)
 

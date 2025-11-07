@@ -1,18 +1,18 @@
 # TrustFabric Security Audit - Definitief Plan
 
-**Versie:** 1.0  
-**Datum:** 23 oktober 2025  
-**Gebaseerd op:** OWASP, NIST, IEC 62304, MDR, best practices 2025  
+**Versie:** 1.0
+**Datum:** 23 oktober 2025
+**Gebaseerd op:** OWASP, NIST, IEC 62304, MDR, best practices 2025
 **Status:** Validated against industry standards
 
 ---
 
 ## 📋 Executive Summary
 
-**Doel:** Comprehensive security audit van TrustFabric voor medical AI deployment  
-**Scope:** Cryptographic implementations, attestation flow, PHI safety, compliance  
-**Timeline:** 4 weken (parallel met Phase 1 development)  
-**Cost:** €8-12k (external audit) + 2 weeks internal effort  
+**Doel:** Comprehensive security audit van TrustFabric voor medical AI deployment
+**Scope:** Cryptographic implementations, attestation flow, PHI safety, compliance
+**Timeline:** 4 weken (parallel met Phase 1 development)
+**Cost:** €8-12k (external audit) + 2 weeks internal effort
 **Deliverable:** Security Assessment Report + remediation plan
 
 ---
@@ -139,8 +139,8 @@
 ## 📅 Four-Week Timeline (Validated)
 
 ### Week 1: Automated Scanning + Setup
-**Duration:** 5 werkdagen  
-**Effort:** 2 dagen internal, 3 dagen scanning time  
+**Duration:** 5 werkdagen
+**Effort:** 2 dagen internal, 3 dagen scanning time
 **Cost:** €0 (open-source tools)
 
 #### Day 1-2: Setup + Initial Scans
@@ -195,8 +195,8 @@ python3 generate_report.py \
 ---
 
 ### Week 2: External Security Audit
-**Duration:** 5 werkdagen  
-**Effort:** External firm (full-time)  
+**Duration:** 5 werkdagen
+**Effort:** External firm (full-time)
 **Cost:** €8-12k (penetration test + code review)
 
 #### Vendor Selection Criteria:
@@ -242,8 +242,8 @@ Day 5: Reporting
 ---
 
 ### Week 3: Remediation + Re-test
-**Duration:** 5 werkdagen  
-**Effort:** 1-2 developers full-time  
+**Duration:** 5 werkdagen
+**Effort:** 1-2 developers full-time
 **Cost:** Internal effort
 
 #### Day 1: Triage External Findings
@@ -315,8 +315,8 @@ bash run_all_scans.sh ../TrustFabric
 ---
 
 ### Week 4: Sign-Off + Documentation
-**Duration:** 3 werkdagen  
-**Effort:** 1 dag internal, external firm sign-off  
+**Duration:** 3 werkdagen
+**Effort:** 1 dag internal, external firm sign-off
 **Cost:** Included in Week 2 cost
 
 #### Activities:
@@ -372,7 +372,7 @@ Status: **APPROVED** ✅
 
 Internal Approval:
 - CTO: [Signature]
-- CISO: [Signature]  
+- CISO: [Signature]
 - Legal: [Signature]
 ```
 
@@ -405,7 +405,7 @@ rules:
     message: Possible PHI in log statement
     severity: ERROR
     languages: [python]
-  
+
   - id: hardcoded-attestation-bypass
     pattern: |
       if SKIP_ATTESTATION:
@@ -413,7 +413,7 @@ rules:
     message: Attestation bypass detected
     severity: ERROR
     languages: [python]
-  
+
   - id: weak-crypto-algorithm
     pattern-either:
       - pattern: hashlib.md5(...)
@@ -559,8 +559,8 @@ def test_confidence_leakage():
 
 ## 📊 External Audit Scope of Work (SOW)
 
-**Vendor:** [TBD - Trail of Bits / NCC Group / Cure53]  
-**Duration:** 10 dagen (2 weeks)  
+**Vendor:** [TBD - Trail of Bits / NCC Group / Cure53]
+**Duration:** 10 dagen (2 weeks)
 **Cost:** €8-12k
 
 ### Deliverables from External Firm:
@@ -764,9 +764,9 @@ bash run_all_scans.sh
 
 ---
 
-**Status:** DEFINITIEF PLAN ✅  
-**Validated against:** OWASP, NIST, IEC 62304, MDR, industry best practices  
-**Timeline:** 4 weken (realistic, proven)  
-**Cost:** €8-13k (market rate)  
+**Status:** DEFINITIEF PLAN ✅
+**Validated against:** OWASP, NIST, IEC 62304, MDR, industry best practices
+**Timeline:** 4 weken (realistic, proven)
+**Cost:** €8-13k (market rate)
 **Quality:** Production-ready audit methodology
 

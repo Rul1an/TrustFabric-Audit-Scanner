@@ -1,7 +1,7 @@
 # TrustFabric AI Security Audit Scanner
 
-**Purpose:** Automated security scanning for TrustFabric codebase  
-**Scope:** Cryptographic modules, attestation handling, input validation  
+**Purpose:** Automated security scanning for TrustFabric codebase
+**Scope:** Cryptographic modules, attestation handling, input validation
 **Separate from:** Main TrustFabric application (this is audit tooling)
 
 ---
@@ -373,8 +373,8 @@ python3 generate_report.py \
 
 ---
 
-**Status:** Audit methodology documented  
-**Separate repo:** TrustFabric-Audit-Scanner  
-**Integration:** Points to TrustFabric main repo  
+**Status:** Audit methodology documented
+**Separate repo:** TrustFabric-Audit-Scanner
+**Integration:** Points to TrustFabric main repo
 **Timeline:** 3 weeks audit before pilot PHI
 

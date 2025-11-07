@@ -1,0 +1,24 @@
+# Audit Scanner Dependencies
+
+# SAST Tools
+semgrep==1.45.0
+bandit[toml]==1.7.5
+
+# SCA Tools
+safety==3.0.1
+pip-audit==2.6.1
+
+# Reporting
+jinja2==3.1.2
+markdown==3.5.1
+
+# Data processing
+pyyaml==6.0.1
+jsonschema==4.20.0
+
+# CVSS scoring
+cvss==2.6
+
+# Optional (if Snyk API key available)
+# snyk==0.9.0
+

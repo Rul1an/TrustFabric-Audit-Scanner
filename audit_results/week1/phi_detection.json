@@ -1,0 +1,14 @@
+{
+  "findings": [
+    {
+      "file": "server/inference_server.py",
+      "line": 381,
+      "pattern": "email",
+      "content": "<p>For more information: <a href=\"mailto:demo@trustfabric.io\">demo@trustfabric.io</a></p>",
+      "severity": "CRITICAL"
+    }
+  ],
+  "summary": {
+    "total": 1
+  }
+}

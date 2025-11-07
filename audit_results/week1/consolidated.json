@@ -1,0 +1,24 @@
+{
+  "scans": [
+    {
+      "tool": "phi_detection",
+      "findings_count": 1,
+      "summary": {
+        "total": 1
+      }
+    },
+    {
+      "tool": "semgrep",
+      "findings_count": 700,
+      "summary": {}
+    }
+  ],
+  "total_findings": 701,
+  "by_severity": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0
+  },
+  "by_category": {}
+}
