@@ -50,7 +50,7 @@ class PHIDetector:
                     # Skip test files and examples
                     if '/tests/' in str(py_file) or '/test_' in str(py_file) or '/examples/' in str(py_file):
                         continue
-                    
+
                     for pattern_name, pattern in PHI_PATTERNS.items():
                         match = re.search(pattern, line, re.IGNORECASE)
                         if match:
