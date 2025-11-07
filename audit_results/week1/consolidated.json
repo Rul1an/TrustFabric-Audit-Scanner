@@ -9,11 +9,11 @@
     },
     {
       "tool": "semgrep",
-      "findings_count": 3,
+      "findings_count": 4,
       "summary": {}
     }
   ],
-  "total_findings": 3,
+  "total_findings": 4,
   "by_severity": {
     "CRITICAL": 0,
     "HIGH": 0,

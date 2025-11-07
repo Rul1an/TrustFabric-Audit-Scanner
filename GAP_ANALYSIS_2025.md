@@ -1,7 +1,7 @@
 # Gap Analysis vs 2025 AI Security Scanner Best Practices
 
-**Date:** 7 november 2025  
-**Comparison:** TrustFabric Scanner vs Industry Leaders  
+**Date:** 7 november 2025
+**Comparison:** TrustFabric Scanner vs Industry Leaders
 **Focus:** ONLY NECESSARY IMPROVEMENTS (no nice-to-haves)
 
 ---
@@ -57,7 +57,7 @@ logger.info(f"Processed: {temp}")  # Sink (PHI leak via intermediate variable)
 - **For pilot:** ❌ NO (our code is simple, no complex dataflows)
 - **For production:** ⚠️ MAYBE (if code complexity increases)
 
-**Effort to add:** 40-80 hours (CodeQL integration)  
+**Effort to add:** 40-80 hours (CodeQL integration)
 **Priority:** **LOW** (defer to production)
 
 ---
@@ -83,7 +83,7 @@ model = torch.load('model.pth')  # ✗ No hash verification
 - **For pilot:** ❌ NO (model deployed manually, controlled environment)
 - **For production:** ✅ YES (automated model updates need validation)
 
-**Effort to add:** 8-16 hours (model hash verification in CI/CD)  
+**Effort to add:** 8-16 hours (model hash verification in CI/CD)
 **Priority:** **MEDIUM** (add in Phase 1)
 
 ---
@@ -112,7 +112,7 @@ def process_input(data):
 - **For pilot:** ❌ NO (limited scope, manual testing sufficient)
 - **For production:** ✅ YES (detect zero-day attacks)
 
-**Effort to add:** 40+ hours (RASP agent integration)  
+**Effort to add:** 40+ hours (RASP agent integration)
 **Priority:** **LOW** (defer to Phase 2)
 
 ---
@@ -132,7 +132,7 @@ def process_input(data):
 - **For pilot:** ❌ NO (simple dependency tree, manual tracking OK)
 - **For production:** ✅ YES (regulatory requirement for MDR)
 
-**Effort to add:** 4-8 hours (CycloneDX integration)  
+**Effort to add:** 4-8 hours (CycloneDX integration)
 **Priority:** **MEDIUM** (add before production)
 
 ---
@@ -163,7 +163,7 @@ def classify_ecg(ecg_data):
 - **For pilot:** ❌ NO (clinical validation covers this)
 - **For production:** ⚠️ MAYBE (RhythmIQ may require this)
 
-**Effort to add:** 16-24 hours (ART integration + test suite)  
+**Effort to add:** 16-24 hours (ART integration + test suite)
 **Priority:** **LOW-MEDIUM** (defer unless required)
 
 ---
@@ -186,8 +186,8 @@ def classify_ecg(ecg_data):
 ## 📋 OPTIONAL Improvements (If Time/Budget)
 
 ### Priority 1: SBOM Generation (4 hours) - RECOMMENDED
-**Why:** MDR compliance requirement  
-**When:** Before production  
+**Why:** MDR compliance requirement
+**When:** Before production
 **Tool:** CycloneDX
 
 ```bash
@@ -197,15 +197,15 @@ cyclonedx-py -r ../TrustFabric/requirements_v5.txt \
   -o audit_results/sbom.json
 ```
 
-**Impact:** Regulatory compliance (MDR Annex I)  
-**Cost:** €0 (open-source tool)  
+**Impact:** Regulatory compliance (MDR Annex I)
+**Cost:** €0 (open-source tool)
 **Effort:** 4 hours
 
 ---
 
 ### Priority 2: Model Hash Verification (8 hours)
-**Why:** Detect model poisoning  
-**When:** Before automated model updates  
+**Why:** Detect model poisoning
+**When:** Before automated model updates
 **Implementation:**
 
 ```python
@@ -217,20 +217,20 @@ if expected_model_hash != actual_model_hash:
     raise SecurityError("Model integrity violation - possible poisoning")
 ```
 
-**Impact:** AI-specific security (OWASP Top 10 for LLM)  
-**Cost:** €0 (manual implementation)  
+**Impact:** AI-specific security (OWASP Top 10 for LLM)
+**Cost:** €0 (manual implementation)
 **Effort:** 8 hours
 
 ---
 
 ### Priority 3: Dataflow Analysis (40+ hours) - DEFER
-**Why:** Catch complex PHI leaks  
-**When:** Only if code complexity increases significantly  
+**Why:** Catch complex PHI leaks
+**When:** Only if code complexity increases significantly
 **Tool:** GitHub CodeQL
 
-**Impact:** Better coverage for complex codebases  
-**Cost:** €0 (GitHub Advanced Security) or time investment  
-**Effort:** 40+ hours (steep learning curve)  
+**Impact:** Better coverage for complex codebases
+**Cost:** €0 (GitHub Advanced Security) or time investment
+**Effort:** 40+ hours (steep learning curve)
 **Recommendation:** **DEFER** (not needed for current simple codebase)
 
 ---
@@ -294,9 +294,9 @@ if expected_model_hash != actual_model_hash:
 
 ---
 
-**Status:** SCANNER MEETS 2025 STANDARDS ✅  
-**Necessary improvements:** 2 (SBOM + model hash)  
-**Timeline:** 12 hours (Phase 1)  
+**Status:** SCANNER MEETS 2025 STANDARDS ✅
+**Necessary improvements:** 2 (SBOM + model hash)
+**Timeline:** 12 hours (Phase 1)
 **For pilot:** READY AS-IS ✅
 
 Scan quality is **EXCELLENT** voor huidige scope! 🚀

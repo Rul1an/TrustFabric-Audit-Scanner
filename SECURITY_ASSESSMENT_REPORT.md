@@ -1,6 +1,6 @@
 # TrustFabric Security Assessment Report
 
-**Date:** 2025-11-07 10:49:35
+**Date:** 2025-11-07 22:27:36
 **Audit Period:** Week 1 (Automated Scanning)
 **Scope:** Cryptographic modules, attestation, PHI safety, dependencies
 
@@ -8,11 +8,11 @@
 
 ## Executive Summary
 
-**Total Findings:** 3
+**Total Findings:** 4
 
 **By Tool:**
 - **phi_detection:** 0 findings
-- **semgrep:** 3 findings
+- **semgrep:** 4 findings
 
 
 ---

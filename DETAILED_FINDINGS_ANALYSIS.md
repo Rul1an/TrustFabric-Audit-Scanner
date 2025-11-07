@@ -1,8 +1,8 @@
 # Detailed Security Findings Analysis
 
-**Scan Date:** 7 november 2025  
-**Methodology:** OWASP ASVS (Application Security Verification Standard)  
-**Analyst:** Security Review Team  
+**Scan Date:** 7 november 2025
+**Methodology:** OWASP ASVS (Application Security Verification Standard)
+**Analyst:** Security Review Team
 **Status:** COMPREHENSIVE ANALYSIS COMPLETE
 
 ---
@@ -37,8 +37,8 @@
 ## 🔍 Finding-by-Finding Analysis (OWASP ASVS Methodology)
 
 ### Finding #1: mock_maa_server.py:114
-**Rule:** `python.jwt.security.unverified-jwt-decode`  
-**Severity:** ERROR  
+**Rule:** `python.jwt.security.unverified-jwt-decode`
+**Severity:** ERROR
 **CWE:** CWE-347 (Improper Verification of Cryptographic Signature)
 
 **Code Context:**
@@ -53,10 +53,10 @@ unverified = pyjwt.decode(jwt, options={"verify_signature": False})
 def test_mock_jwt_structure():
     """Test that mock JWT has correct structure"""
     jwt = generate_mock_maa_jwt("test-report")
-    
+
     # Decode without verification (to check structure)
     unverified = pyjwt.decode(jwt, options={"verify_signature": False})  # ← Finding
-    
+
     # Check critical claims
     assert unverified["x-ms-attestation-type"] == "sevsnpvm"
 ```
@@ -68,14 +68,14 @@ def test_mock_jwt_structure():
 - **Exposure:** Not reachable from API endpoints
 - **OWASP ASVS V9.1.1:** "Verify that all cryptographic modules fail securely" - N/A (test code)
 
-**Remediation:** NONE REQUIRED (legitimate test pattern)  
+**Remediation:** NONE REQUIRED (legitimate test pattern)
 **Status:** **ACCEPTED** ✅
 
 ---
 
 ### Finding #2: vtpm_attestation.py:158
-**Rule:** `python.jwt.security.unverified-jwt-decode`  
-**Severity:** ERROR  
+**Rule:** `python.jwt.security.unverified-jwt-decode`
+**Severity:** ERROR
 **CWE:** CWE-347
 
 **Code Context:**
@@ -90,7 +90,7 @@ claims = pyjwt.decode(jwt_token, options={"verify_signature": False})
 def get_attestation_expiry(jwt_token: str) -> int:
     """
     Extract expiry timestamp from JWT (for caching TTL calculation).
-    
+
     Note: Signature not verified here (performance optimization).
     Signature is verified in attestation flow.
     """
@@ -110,7 +110,7 @@ def get_attestation_expiry(jwt_token: str) -> int:
 def get_attestation_expiry(jwt_token: str) -> int:
     """
     Extract expiry for cache TTL (non-security-critical).
-    
+
     SECURITY NOTE: Signature verification happens in main attestation flow.
     This helper only extracts 'exp' claim for cache management.
     """
@@ -118,14 +118,14 @@ def get_attestation_expiry(jwt_token: str) -> int:
     return claims.get('exp', 0)
 ```
 
-**Remediation:** Add security comment (5 min)  
+**Remediation:** Add security comment (5 min)
 **Status:** **ACCEPTED** with documentation ✅
 
 ---
 
 ### Finding #3: verify_attestation.py:125
-**Rule:** `python.jwt.security.unverified-jwt-decode`  
-**Severity:** ERROR  
+**Rule:** `python.jwt.security.unverified-jwt-decode`
+**Severity:** ERROR
 **CWE:** CWE-347
 
 **Code Context:**
@@ -140,7 +140,7 @@ def get_attestation_expiry(jwt_token: str) -> int:
 def extract_claims_summary(claims: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract summary of important claims for logging/debugging.
-    
+
     Args:
         claims: Decoded JWT claims (already verified upstream)
     """
@@ -155,7 +155,7 @@ def extract_claims_summary(claims: Dict[str, Any]) -> Dict[str, Any]:
 - **Exposure:** Not reachable from network
 - **OWASP ASVS V9.2.1:** "Verify that all client-side JWT operations use signature verification" - N/A (CLI tool)
 
-**Remediation:** NONE REQUIRED (CLI tool, not API)  
+**Remediation:** NONE REQUIRED (CLI tool, not API)
 **Status:** **ACCEPTED** ✅
 
 ---
@@ -291,7 +291,7 @@ def extract_claims_summary(claims: Dict[str, Any]) -> Dict[str, Any]:
 def get_attestation_expiry(jwt_token: str) -> int:
     """
     Extract expiry for cache TTL (non-security-critical).
-    
+
     SECURITY NOTE: JWT signature is verified in attestation flow (verify_attestation.py).
     This helper only extracts 'exp' claim for cache management performance.
     Skipping signature check here is SAFE (no authentication decision made).
@@ -377,9 +377,9 @@ claims = pyjwt.decode(jwt_token, options={"verify_signature": False})
 
 ---
 
-**Assessment:** CODE QUALITY EXCELLENT  
-**Risk Level:** VERY LOW  
-**Recommendation:** PROCEED TO PILOT  
+**Assessment:** CODE QUALITY EXCELLENT
+**Risk Level:** VERY LOW
+**Recommendation:** PROCEED TO PILOT
 
 **Updated:** 7 november 2025, 11:00
 
