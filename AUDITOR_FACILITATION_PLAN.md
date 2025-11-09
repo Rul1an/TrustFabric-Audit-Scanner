@@ -1,907 +1,764 @@
-# Expert Auditor Facilitation Plan
+# Expert Security Auditor Facilitation Plan
 
-**Purpose:** Make external security audit efficient and thorough  
-**Goal:** Enable auditor to find issues in minimum time  
+**Purpose:** Make TrustFabric maximally transparent for security audit  
+**Goal:** Enable auditor to find issues faster (saves time = saves cost)  
 **Based on:** Trail of Bits, NCC Group, Cure53 audit methodologies
 
 ---
 
 ## 🎯 What Expert Auditors Need (Industry Standard)
 
-### Phase 1: Pre-Audit Information Package (1 week prep)
+### Day 1: Onboarding Package (Before Audit Starts)
+Auditors need **context** before diving into code. Good preparation = 30% faster audit.
 
-#### 1.1 Architecture & Design Documentation
-**What:** Complete system understanding before code review  
-**Format:** Markdown + diagrams (Mermaid, ASCII, or draw.io)
+**Package Contents:**
 
-**Create:**
+#### 1. Architecture Documentation (Already Have ✅)
 ```
-docs/AUDITOR_PACKAGE/
-├── 01_SYSTEM_OVERVIEW.md
-│   - What TrustFabric does (1-page executive summary)
-│   - Key security claims (PHI safety, attestation, signing)
-│   - Trust boundaries (what we protect, what we don't)
-│
-├── 02_ARCHITECTURE.md
-│   - Component diagram (CVM, MAA, Key Vault, storage)
-│   - Data flow diagram (ECG input → hash → inference → Evidence Pack)
-│   - Trust boundaries (SEV-SNP enclave, private network, etc.)
-│   - Attack surface map (API endpoints, dependencies)
-│
-├── 03_THREAT_MODEL.md
-│   - STRIDE analysis (Spoofing, Tampering, Repudiation, etc.)
-│   - Attack scenarios (replay attacks, model poisoning, PHI extraction)
-│   - Mitigations implemented (nonce validation, SecureModelLoader, etc.)
-│   - Residual risks (launch measurement not pinned, etc.)
-│
-├── 04_CRYPTOGRAPHIC_DESIGN.md
-│   - Algorithms used (ECDSA P-256, SHA256, RS256)
-│   - Key management (Azure Key Vault, rotation policy)
-│   - Nonce generation (secrets.token_hex)
-│   - Signature flow (Evidence Pack → canonical JSON → hash → sign)
-│
-└── 05_COMPLIANCE_MAPPING.md
-    - OWASP ASVS checklist (which requirements met)
-    - MDR requirements (SBOM, risk management)
-    - HIPAA/GDPR controls (PHI safety, data minimization)
+✅ docs/RHYTHMIQ_ARCHITECTURE.md (data flow, security boundaries)
+✅ docs/MAA_ATTESTATION_POLICY.md (9 security checks explained)
+✅ Evidence Pack schema (what data flows where)
+✅ Threat model: What we're protecting (PHI) from whom (attackers)
 ```
 
-**Time to create:** 6-8 hours (comprehensive)  
-**Auditor time saved:** 2-3 days (don't have to reverse-engineer)
+**Auditor needs:**
+- "What is the crown jewel?" → PHI (patient ECG data)
+- "What's the security boundary?" → SEV-SNP enclave
+- "What's the trust anchor?" → Azure MAA (third-party verifier)
+
+**Make it easy:**
+- Single PDF: "TrustFabric Security Architecture.pdf" (combine all docs)
+- Mermaid diagrams (convert ASCII to visual)
+- Attack surface map (what's exposed to internet)
 
 ---
 
-#### 1.2 Critical Code Paths Documentation
-**What:** Annotated code walkthroughs for security-critical flows  
-**Format:** Markdown with code snippets + line numbers
+#### 2. Code Navigation Guide (NEW - Need to Create)
+**Problem:** Auditor wastes time finding "where is the crypto code?"
 
-**Create:**
-```
-docs/AUDITOR_PACKAGE/CODE_PATHS/
-├── ATTESTATION_FLOW.md
-│   """
-│   1. Client request with nonce
-│   2. Generate SEV-SNP quote (server/vtpm_attestation.py:45-80)
-│   3. POST to MAA (server/maa_client.py:119-155)
-│   4. Validate JWT (trustfabric_verify/verify_attestation.py:32-268)
-│      - Check 1: Algorithm (line 95)
-│      - Check 2-9: Claims (lines 130-210)
-│      - Check 10: Nonce (lines 247-259) ← NEW
-│   5. Proceed with inference (only if all checks pass)
-│   
-│   Security Properties:
-│   - Fresh attestation per request OR cached (5-min TTL)
-│   - Nonce binding prevents replay
-│   - 10 validation checks (fail-closed)
-│   """
-│
-├── PHI_REDACTION_FLOW.md
-│   """
-│   1. Receive ECG data (FHIR Observation)
-│   2. Hash immediately (SHA256)
-│   3. Discard original ECG
-│   4. Only hash in logs/Evidence Pack
-│   
-│   Files to review:
-│   - server/inference_server.py:455-470 (input hashing)
-│   - Verify: No print/logger with raw ECG
-│   - Verify: Only hash in Evidence Pack
-│   """
-│
-├── EVIDENCE_PACK_SIGNING_FLOW.md
-│   """
-│   1. Generate Evidence Pack (server/evidence_pack_v21.py)
-│   2. Add signature nonce (server/signing.py:70-74) ← NEW
-│   3. Canonical JSON (line 79)
-│   4. Hash (SHA256, line 82)
-│   5. Sign with Key Vault (ECDSA P-256, line 95-98)
-│   6. Return signature metadata
-│   
-│   Security Properties:
-│   - Nonce prevents signature replay
-│   - Canonical JSON ensures deterministic hash
-│   - Key Vault (HSM) prevents key extraction
-│   """
-│
-└── MODEL_INTEGRITY_FLOW.md
-    """
-    1. Load manifest (manifests/resnet18-v1.2.3.json)
-    2. Compute model hash (server/secure_model_loader.py:130-136)
-    3. Compare with manifest (lines 96-107)
-    4. Raise SecurityError if mismatch
-    5. Load model only after verification
-    
-    Security Properties:
-    - Model poisoning detected
-    - Hash + size validation
-    - Fail-closed (exception if tampered)
-    """
-```
-
-**Time to create:** 4-6 hours  
-**Auditor benefit:** Can jump directly to security-critical code
-
----
-
-#### 1.3 Test Environment Setup Guide
-**What:** Let auditor reproduce our testing  
-**Format:** Step-by-step commands
-
-**Create:**
+**Solution:** Create `SECURITY_CODE_MAP.md`:
 ```markdown
-# docs/AUDITOR_PACKAGE/TESTING_GUIDE.md
+# Security-Critical Code Locations
 
-## Quick Start (10 minutes)
+## Cryptography (PRIORITY 1 - Review First)
+| File | Lines | What It Does | Risk Level |
+|------|-------|--------------|------------|
+| `server/signing.py` | 31-120 | Evidence Pack ECDSA signing | HIGH |
+| `trustfabric_verify/verify_attestation.py` | 32-270 | MAA JWT validation (9 checks) | HIGH |
+| `server/maa_client.py` | 40-180 | MAA API integration | MEDIUM |
 
-### 1. Clone Repository
-git clone https://github.com/Rul1an/TrustFabric.git
+## PHI Handling (PRIORITY 1 - Medical AI Critical)
+| File | Lines | What It Does | Risk Level |
+|------|-------|--------------|------------|
+| `server/evidence_pack_v21.py` | 25-104 | Evidence Pack generation | HIGH |
+| `server/inference_server.py` | 450-600 | Input hashing (PHI redaction) | CRITICAL |
+
+## Attestation Flow (PRIORITY 2)
+| File | Lines | What It Does | Risk Level |
+|------|-------|--------------|------------|
+| `server/attestation_cache.py` | 1-280 | Cache with 5-min TTL | MEDIUM |
+| `server/vtpm_attestation.py` | 45-200 | SEV-SNP quote generation | HIGH |
+
+## Model Security (PRIORITY 2)
+| File | Lines | What It Does | Risk Level |
+|------|-------|--------------|------------|
+| `server/secure_model_loader.py` | 30-120 | Model integrity verification | HIGH |
+| `scripts/verify_model.py` | 1-150 | Model hash checking | MEDIUM |
+
+## Test Files (SKIP or Review Last)
+| File | Purpose |
+|------|---------|
+| `tests/test_*.py` | Unit tests (contains unverified JWT - OK in tests) |
+| `server/mock_*.py` | Mock servers (testing only) |
+```
+
+**Impact:** Auditor knows exactly where to look (saves 2-4 hours of exploration)
+
+---
+
+#### 3. Known Issues & Limitations (HONESTY = TRUST)
+**Problem:** Auditor finds issue you already know → wastes time
+
+**Solution:** Create `KNOWN_SECURITY_LIMITATIONS.md`:
+```markdown
+# Known Security Limitations (Pre-Audit Disclosure)
+
+## Implemented But Needs Validation:
+1. **Nonce validation** (FIXED this week)
+   - Code: verify_attestation.py:247-259
+   - Status: Implemented, not tested with real MAA JWT
+   - Auditor should: Test with real attestation flow
+
+2. **Kid validation** (FIXED this week)
+   - Code: verify_attestation.py:114-119
+   - Status: Implemented, not tested
+   - Auditor should: Test with malicious JWKS
+
+## Not Yet Implemented (Phase 1):
+1. **Launch measurement pinning** (HIGH priority)
+   - Risk: Any VM image accepted (no measurement validation)
+   - Why: Don't have known-good measurement yet (need DCasv5)
+   - Timeline: Add in Phase 1 (after DCasv5 deployment)
+   - File to update: verify_attestation.py (add check after line 210)
+
+2. **Rate limiting** (MEDIUM priority)
+   - Risk: DoS possible (no request throttling)
+   - Why: Not needed for pilot (limited users)
+   - Timeline: Add before production
+   - Implementation: Flask-Limiter or nginx rate limiting
+
+3. **TCB version minimums** (MEDIUM priority)
+   - Risk: Outdated firmware accepted
+   - Why: Don't know minimum versions yet
+   - Timeline: Research + implement Phase 1
+
+## Test Coverage Gaps:
+1. **Signature replay with nonce** - Need Azure KV for test
+2. **Real MAA JWT validation** - Need DCasv5 for real quote
+3. **Adversarial ECG inputs** - Need clinical validation
+
+## Architecture Assumptions (Validate These):
+1. **5-min attestation cache** - Is TTL secure enough?
+2. **Private network only** - No defense-in-depth for public exposure?
+3. **Single signing key** - Key rotation tested?
+```
+
+**Impact:** Auditor knows what to focus on (saves 4-8 hours of duplicate discovery)
+
+---
+
+#### 4. Audit Environment Setup (Make It Easy)
+**Problem:** Auditor can't run code → can't test findings
+
+**Solution:** Create `AUDITOR_SETUP.md`:
+```markdown
+# Auditor Environment Setup (30 min)
+
+## Prerequisites:
+- Python 3.10+
+- Azure CLI (for Key Vault access)
+- Git
+
+## Quick Start:
+```bash
+# 1. Clone repo
+git clone https://github.com/Rul1an/TrustFabric
 cd TrustFabric
-git checkout develop
 
-### 2. Install Dependencies
+# 2. Install dependencies
 pip install -r requirements_v5.txt
 
-### 3. Run Unit Tests (Local)
+# 3. Run unit tests (no Azure needed)
 python3 -m unittest discover tests/ -v
+# Expected: 32 tests, 4 skipped (need Azure)
 
-Expected: 32 tests, 28 pass, 4 skipped (need Azure)
-
-### 4. Run Security Tests
-python3 -m unittest tests/test_security_fixes.py -v
-
-Expected: 7 tests, 5 pass, 2 skipped
-
-### 5. Run Security Scanner
-cd ../TrustFabric-Audit-Scanner
-bash run_all_scans.sh ../TrustFabric
-
-Expected: 4 findings (3 legitimate, 1 false positive)
-
-## Integration Testing (Requires Azure CVM)
-
-### Setup Azure Resources
-# SSH to CVM
-ssh azureuser@172.201.15.70 (requires VPN or temp public IP)
-
-# Run integration tests
-cd ~/trustfabric
+# 4. For integration tests (requires Azure credentials):
 export INTEGRATION_TEST=true
-python3 -m unittest discover tests/ -v
-
-Expected: 32 tests, 32 pass, 0 skipped
-
-## Penetration Testing Targets
-
-### API Endpoints:
-- POST /infer (main inference endpoint)
-- GET /health (health check)
-- GET /cache/stats (monitoring)
-
-### Test Accounts:
-- Username: demo
-- Password: demo123 (basic auth)
-
-### Azure Resources:
-- Key Vault: tf7f736854b2kv.vault.azure.net
-- MAA: tfmaa7f736854b2.weu.attest.azure.net
+# We'll provide temp Azure access (read-only Key Vault)
 ```
 
-**Time to create:** 2 hours  
-**Auditor benefit:** Can start testing immediately
+## Test Accounts:
+- Azure subscription: [Auditor-specific, read-only]
+- Key Vault access: [Temp role assignment, expires after audit]
+- CVM access: [Via Bastion, no production access]
+
+## Attack Surface:
+```
+Exposed:
+- /infer endpoint (requires auth - test with Burp Suite)
+- /health endpoint (public - test for info disclosure)
+
+Not Exposed:
+- Key Vault (private endpoint only)
+- CVM (private network only)
+```
 
 ---
 
-### Phase 2: Audit Execution Facilitation (During 3-Week Audit)
+#### 5. Reproducible Test Cases
+**Problem:** Auditor can't reproduce your tests
 
-#### 2.1 Live Q&A Access
-**What:** Dedicated Slack channel or daily standups  
-**When:** Week 1-3 (external audit period)
+**Solution:** Create `SECURITY_TEST_CASES.md`:
+```markdown
+# Reproducible Security Test Cases
 
-**Setup:**
-```
-1. Create #security-audit Slack channel
-2. Add: Auditor team, TrustFabric developers, CISO
-3. Daily standup (15 min):
-   - Auditor: Questions from previous day
-   - Developers: Answer + provide code pointers
-   - CISO: Track progress
-```
+## Test 1: Nonce Replay Attack
+**Objective:** Verify replay attack prevention
 
-**Response time SLA:**
-- Critical questions: < 2 hours
-- Normal questions: < 24 hours
-- Code clarifications: < 4 hours
-
----
-
-#### 2.2 Code Annotation for Auditors
-**What:** Add security-relevant comments in code  
-**Format:** Special comment tags auditors can grep
-
-**Examples:**
-```python
-# SECURITY-CRITICAL: PHI redaction happens here
-input_hash = hashlib.sha256(ecg_data).hexdigest()
-# Original ECG discarded (not logged)
-
-# SECURITY-ASSUMPTION: MAA JWT signature already verified upstream
-def get_attestation_expiry(jwt_token):
-    # Safe to decode without verification (not used for auth)
-    claims = jwt.decode(jwt_token, options={"verify_signature": False})
-    return claims.get('exp')
-
-# SECURITY-TODO: Add launch measurement pinning in Phase 1
-# Current: Accept any azure-compliant-cvm
-# Future: Verify launch_measurement == EXPECTED_MEASUREMENT
-
-# SECURITY-MITIGATION: Nonce validation prevents replay attacks
-if actual_nonce != expected_nonce:
-    raise AttestationVerificationError("Replay attack detected")
-```
-
-**Grep for auditor:**
+**Steps:**
 ```bash
-# Find all security-critical code
-grep -r "SECURITY-CRITICAL" server/
+# 1. Generate attestation with nonce A
+NONCE_A="test-nonce-12345"
+python3 server/maa_client.py attestation.bin > jwt_with_nonce_a.txt
 
-# Find assumptions
-grep -r "SECURITY-ASSUMPTION" server/
+# 2. Try to validate with nonce B
+NONCE_B="different-nonce-67890"
+python3 trustfabric_verify/verify_attestation.py \
+  "$(cat jwt_with_nonce_a.txt)" \
+  --expected-nonce "$NONCE_B"
 
-# Find known gaps
-grep -r "SECURITY-TODO" server/
-
-# Find mitigations
-grep -r "SECURITY-MITIGATION" server/
+# Expected: AttestationVerificationError (nonce mismatch)
 ```
 
-**Time to add:** 2-3 hours (annotate ~30 locations)  
-**Auditor benefit:** Immediately see security-relevant code
+**Success Criteria:** Error raised ✓
 
 ---
 
-#### 2.3 Automated Audit Helpers
-**What:** Scripts to help auditor analyze code  
-**Format:** Python scripts + shell commands
+## Test 2: Tampered Model Detection
+**Objective:** Verify model poisoning prevention
 
-**Create:**
+**Steps:**
 ```bash
-# scripts/audit_helpers/
+# 1. Create valid model
+echo "fake model data" > model.bin
 
-# 1. Find all JWT operations
-grep_jwt.sh:
-  grep -rn "jwt.decode\|jwt.encode" server/ trustfabric_verify/
-  # Shows: All JWT operations with line numbers
+# 2. Generate manifest with hash
+python3 scripts/create_manifest.py model.bin
 
-# 2. Find all crypto operations
-grep_crypto.sh:
-  grep -rn "sign\|verify\|hash\|encrypt\|decrypt" server/
-  # Shows: All crypto calls
+# 3. Tamper with model
+echo "TAMPERED" >> model.bin
 
-# 3. Find all logging statements
-grep_logs.sh:
-  grep -rn "logger\.\|print(" server/
-  # Shows: All potential PHI leak points
+# 4. Try to load
+python3 scripts/verify_model.py model.bin manifest.json
 
-# 4. Find all external calls
-grep_network.sh:
-  grep -rn "requests\.\|http\|curl" server/
-  # Shows: All network operations (attack surface)
-
-# 5. Generate call graph
-generate_call_graph.py:
-  # Uses pycallgraph or similar
-  # Shows: Which functions call crypto/JWT/logging
+# Expected: SecurityError (hash mismatch)
 ```
 
-**Time to create:** 3-4 hours  
-**Auditor benefit:** Quick navigation to interesting code
+**Success Criteria:** Error raised ✓
 
 ---
 
-### Phase 3: Vulnerability Remediation Support (Week 3)
+## Test 3: JWT Algorithm Confusion
+**Objective:** Verify HS256 rejected (classic attack)
 
-#### 3.1 Vulnerability Template
-**What:** Structured format for auditor to report findings  
-**Format:** Markdown template
-
-**Create:**
-```markdown
-# docs/AUDITOR_PACKAGE/VULNERABILITY_TEMPLATE.md
-
-## Vulnerability Report Template
-
-**ID:** VULN-001  
-**Title:** [Short description]  
-**Severity:** CRITICAL / HIGH / MEDIUM / LOW  
-**CVSS Score:** X.X  
-**CWE:** CWE-XXX  
-
-### Description
-[What is the vulnerability?]
-
-### Location
-- **File:** `server/example.py`
-- **Line:** 123
-- **Function:** `example_function()`
-
-### Proof of Concept
+**Steps:**
 ```python
-# Exploit code or curl command
+import jwt
+
+# Create HS256 token with RS256 public key as secret
+public_key = get_maa_public_key()
+fake_token = jwt.encode(
+    {"x-ms-attestation-type": "sevsnpvm"},
+    public_key,  # Use public key as HMAC secret
+    algorithm="HS256"
+)
+
+# Try to verify
+verify_attestation_jwt(fake_token)
+
+# Expected: AttestationVerificationError (algorithm rejected)
 ```
 
-### Impact
-[What can attacker do? PHI leak? DoS? Code execution?]
-
-### Remediation
-[Specific fix recommendation]
-
-### References
-- [OWASP link]
-- [CWE link]
-- [Relevant standard]
-
----
-
-**Reporter:** [Auditor name]  
-**Date:** [Date]  
-**Validated By:** [Developer name, date]
-```
-
-**Auditor benefit:** Consistent reporting, easy to track
-
----
-
-#### 3.2 Fix Verification Process
-**What:** How we validate auditor's findings  
-**Format:** Checklist
-
-**Process:**
-```
-1. Auditor reports finding (use template)
-2. Developer triages (within 24h)
-   - Confirm: Real issue
-   - Dispute: False positive (provide evidence)
-   - Clarify: Need more info
-3. Developer implements fix (timeline based on severity)
-   - P0 (Critical): < 24h
-   - P1 (High): < 1 week
-   - P2 (Medium): < 2 weeks
-4. Developer adds regression test
-5. Auditor validates fix
-6. Mark as RESOLVED
+**Success Criteria:** Error raised in STEP 1 (algorithm check) ✓
 ```
 
 ---
 
-## 📊 Auditor Facilitation Package (Complete Checklist)
+## 📋 FACILITATION PLAN (What to Create)
 
-### Documentation (12-16 hours to create):
-- [x] System overview (1h)
-- [x] Architecture diagrams (2h)
-- [x] Threat model (3h)
-- [x] Cryptographic design (2h)
-- [x] Compliance mapping (2h)
-- [x] Critical code paths (4h)
-- [x] Test environment guide (2h)
-- [x] Security annotations in code (3h)
-- [x] Audit helper scripts (3h)
-- [x] Vulnerability template (1h)
+### Priority 1: Critical Path Documentation (4 hours)
 
-**Total:** ~20 hours prep work (before auditor starts)
+**1.1 Security Code Map** (1 hour)
+```bash
+# Create: docs/SECURITY_CODE_MAP.md
+# Content:
+#   - Table: File → Lines → Function → Risk Level
+#   - Critical code: Crypto (signing, JWT), PHI (redaction)
+#   - Color-coded by risk (RED=CRITICAL, YELLOW=HIGH, GREEN=MEDIUM)
+#   - Direct links to GitHub (line numbers)
+```
 
-### During Audit (Week 1-3):
-- [ ] Daily standup (15 min/day = 3 hours total)
-- [ ] Q&A response (estimate 10 hours total)
-- [ ] Fix critical findings (estimate 20-40 hours)
-
-**Total engagement:** ~35-65 hours over 3 weeks
-
----
-
-## 🔍 Specific Review Methodologies (Per Area)
-
-### Area 1: Cryptographic Implementation Review
-
-**What Auditor Will Do:**
-1. **Code Review** (manual, line-by-line):
-   ```python
-   # They'll check:
-   - signing.py: ECDSA implementation correct?
-   - verify_attestation.py: JWT validation complete?
-   - Are nonces cryptographically random?
-   - Constant-time comparisons used?
-   ```
-
-2. **NIST Test Vectors:**
-   ```python
-   # They'll run:
-   - P-256 known answer tests (KAT)
-   - Sign test vectors, verify signatures match expected
-   - Verify with different keys (should fail)
-   ```
-
-3. **Attack Simulations:**
-   ```python
-   # They'll try:
-   - Algorithm confusion (HS256 with RS256 key)
-   - Weak nonce (predictable random)
-   - Signature malleability
-   - Timing attacks (measure signature verification time)
-   ```
-
-**How to Facilitate:**
+**Example:**
 ```markdown
-# docs/AUDITOR_PACKAGE/CRYPTO_REVIEW_GUIDE.md
-
-## Cryptographic Components to Review
-
-### 1. Evidence Pack Signing (server/signing.py)
-**Lines:** 31-115  
-**Algorithm:** ECDSA P-256 (via Azure Key Vault)  
-**Input:** Canonical JSON (RFC 8785)  
-**Output:** 64-byte signature (hex-encoded)
-
-**Test Command:**
-python3 server/signing.py examples/rhythmiq_af_detection_evidence.json
-
-**Expected:** Signature in 500-700ms (Key Vault network latency)
-
-**Check:**
-- [ ] Canonical JSON correct? (deterministic serialization)
-- [ ] Hash algorithm: SHA256 ✓
-- [ ] Signature algorithm: ES256 (ECDSA P-256) ✓
-- [ ] Nonce included? ✓ (as of security fixes)
-- [ ] Key stored securely? ✓ (Azure Key Vault HSM)
-
-### 2. JWT Validation (trustfabric_verify/verify_attestation.py)
-**Lines:** 32-268  
-**Algorithm:** RS256 (RSA-SHA256)  
-**Checks:** 10 security validations
-
-**Test Command:**
-# Generate mock JWT
-python3 server/mock_maa_server.py
-JWT=$(cat /tmp/mock_maa.jwt)
-
-# Validate (will fail signature, but tests parsing)
-python3 trustfabric_verify/verify_attestation.py "$JWT"
-
-**Check:**
-- [ ] Algorithm whitelist: only RS256 ✓
-- [ ] JWKS fetching secure? ✓ (HTTPS)
-- [ ] Kid validation? ✓ (as of security fixes)
-- [ ] Nonce validation? ✓ (as of security fixes)
-- [ ] All 10 checks present? ✓
-
-### 3. Random Number Generation
-**Locations:**
-- Evidence Pack run_id: uuid.uuid4() (uses os.urandom)
-- Signature nonce: secrets.token_hex(16) ✓ (cryptographic)
-- MAA nonce: [Not implemented yet - client provides]
-
-**Check:**
-- [ ] Using secrets module? ✓
-- [ ] Sufficient entropy? ✓ (16 bytes = 128 bits)
-- [ ] No seed reuse? ✓ (os.urandom)
+| Priority | File | Lines | Function | Risk | Why |
+|----------|------|-------|----------|------|-----|
+| 🔴 P1 | signing.py | 92-98 | ECDSA signing | CRITICAL | Any bug = security failure |
+| 🔴 P1 | verify_attestation.py | 130-210 | MAA claim validation | CRITICAL | Missing check = bypass |
+| 🟡 P2 | attestation_cache.py | 50-90 | Cache logic | HIGH | TTL too long = stale attestation |
 ```
-
-**Time to create:** 3-4 hours  
-**Auditor benefit:** Know exactly what to check, where to look
 
 ---
 
-### Area 2: MAA Attestation Completeness Review
-
-**What Auditor Will Do:**
-1. **Compare with Azure Documentation:**
-   ```
-   - Read Microsoft MAA docs
-   - Check which claims TrustFabric validates
-   - Identify missing checks (if any)
-   ```
-
-2. **Attack Simulation:**
-   ```python
-   # They'll craft malicious JWTs:
-   - Set isDebuggable=True (should be rejected)
-   - Remove debug-disabled claims (should be rejected)
-   - Use old JWT with new nonce (should be rejected)
-   - Tamper with policy hash (should be rejected)
-   ```
-
-3. **Threat Modeling:**
-   ```
-   - What if attacker boots tampered VM?
-   - What if attacker has Azure admin access?
-   - What if MAA service is compromised?
-   ```
-
-**How to Facilitate:**
+**1.2 Known Limitations Document** (1 hour)
 ```markdown
-# docs/AUDITOR_PACKAGE/ATTESTATION_REVIEW_GUIDE.md
+# KNOWN_SECURITY_LIMITATIONS.md
 
-## MAA Attestation Security Review
+## Pre-Disclosed Issues (Don't Waste Time Finding These):
 
-### Current Implementation (10 Checks):
-1. Algorithm: RS256 only ✓
-2. Signature: Verified with JWKS ✓
-3. Issuer: Strict match ✓
-4. Audience: Strict match ✓
-5. Time window: nbf ≤ now ≤ exp ✓
-6. Attestation type: sevsnpvm ✓
-7. Debug disabled: 4 checks ✓
-8. Secure boot: Validated ✓
-9. Platform compliance: azure-compliant-cvm ✓
-10. Nonce: Validated ✓ (NEW)
+### Launch Measurement Not Validated (HIGH)
+**Location:** verify_attestation.py (missing check)
+**Risk:** Any VM image accepted (no pinning)
+**Why not fixed:** Need DCasv5 to capture known-good measurement
+**Timeline:** Phase 1 (Week 1 after DCasv5)
+**Auditor focus:** Confirm this is the only missing MAA check
 
-### Known Gaps (To Review):
-- [ ] Launch measurement NOT pinned (accept any VM image)
-- [ ] TCB versions NOT checked (accept any firmware version)
-- [ ] Migration policy NOT enforced (default is OK, but not explicit)
-
-### Attack Scenarios to Test:
-1. **Replay Attack:**
-   - Get JWT with nonce A
-   - Send request with nonce B
-   - Reuse JWT from step 1
-   - Expected: REJECTED (nonce mismatch) ✓
-
-2. **Debug VM Attack:**
-   - Boot CVM with debug enabled
-   - Get MAA JWT (will have isDebuggable=True)
-   - Send to TrustFabric
-   - Expected: REJECTED (debug check fails) ✓
-
-3. **Tampered VM Attack:**
-   - Boot modified VM image
-   - Get MAA JWT (different launch measurement)
-   - Send to TrustFabric
-   - Expected: CURRENTLY ACCEPTED ✗ (launch measurement not pinned)
-   - Risk: HIGH (attacker can run malicious code)
-   - Remediation: Pin launch measurement (Phase 1)
-
-### Test Files:
-- tests/test_mock_attestation.py (8 tests for claims parsing)
-- tests/test_security_fixes.py (5 tests for nonce/kid validation)
-
-### Reference:
-- Azure MAA docs: https://learn.microsoft.com/en-us/azure/attestation/
-- Our MAA policy: docs/MAA_ATTESTATION_POLICY.md
+### Rate Limiting Not Implemented (MEDIUM)
+**Location:** inference_server.py (no Flask-Limiter)
+**Risk:** DoS possible
+**Why not fixed:** Pilot has limited users
+**Timeline:** Before production
+**Auditor focus:** Test actual DoS (how many requests to crash?)
 ```
 
-**Time to create:** 2-3 hours  
-**Auditor benefit:** Clear scope, known gaps documented
+**Impact:** Auditor doesn't spend 2 days finding what you already know
 
 ---
 
-### Area 3: Penetration Testing Facilitation
+**1.3 Reproducible Test Environment** (2 hours)
+```bash
+# Create: scripts/setup_audit_environment.sh
 
-**What Auditor Will Do:**
-1. **Black-box Testing** (no code access):
-   - Fuzz API endpoints
-   - Try auth bypass
-   - Injection attacks
+#!/bin/bash
+# Sets up isolated environment for auditor
 
-2. **Gray-box Testing** (with architecture):
-   - Target known weaknesses
-   - Test attestation flow
-   - PHI extraction attempts
+# 1. Create temp Azure resource group (auditor-specific)
+az group create -n trustfabric-audit-rg -l westeurope
 
-3. **White-box Testing** (with code):
-   - Review code
-   - Craft targeted exploits
-   - Verify fixes
+# 2. Grant read-only access to auditor
+az role assignment create \
+  --assignee <auditor-email> \
+  --role "Reader" \
+  --scope /subscriptions/.../resourceGroups/trustfabric-audit-rg
 
-**How to Facilitate:**
-```markdown
-# docs/AUDITOR_PACKAGE/PENTEST_GUIDE.md
+# 3. Create temp Key Vault key (auditor can test signing)
+az keyvault key create --vault-name tf-audit-kv --name audit-test-key --kty EC
 
-## Penetration Testing Scope
-
-### In-Scope:
-✓ API endpoints (/infer, /health, /cache/stats)
-✓ Attestation flow (MAA integration, JWT validation)
-✓ Evidence Pack generation + signing
-✓ PHI handling (input → hash → Evidence Pack)
-
-### Out-of-Scope:
-✗ Azure infrastructure (managed by Microsoft)
-✗ Azure Key Vault (HSM, managed service)
-✗ Azure MAA (third-party service)
-✗ Denial of Service (coordinate with us first)
-
-### Test Environment:
-- **Staging CVM:** 172.201.15.70 (request temp public IP)
-- **Test Account:** demo / demo123
-- **Rate Limit:** None (for testing - will add based on your findings)
-
-### Attack Scenarios (Prioritized):
-
-**P0 (Critical):**
-1. PHI Extraction
-   - Goal: Extract raw ECG data from logs/Evidence Pack
-   - Method: Timing attacks, error messages, side channels
-   - Success criteria: Any patient data extracted
-
-2. Attestation Bypass
-   - Goal: Get inference without valid attestation
-   - Method: Fake JWT, replay attack, algorithm confusion
-   - Success criteria: Inference with fake/no attestation
-
-**P1 (High):**
-3. Model Poisoning
-   - Goal: Replace model with malicious version
-   - Method: Bypass SecureModelLoader hash check
-   - Success criteria: Load tampered model
-
-4. Evidence Pack Forgery
-   - Goal: Create fake Evidence Pack with valid signature
-   - Method: Key theft, signature replay, hash collision
-   - Success criteria: Fake Evidence Pack passes verification
-
-**P2 (Medium):**
-5. Denial of Service
-   - Goal: Crash or slow down service
-   - Method: Large inputs, resource exhaustion
-   - Success criteria: Service unavailable
-
-### Test Data:
-- Sample FHIR ECG: examples/test_ecg_fhir.json
-- Sample Evidence Pack: examples/rhythmiq_af_detection_evidence.json
-- Mock MAA JWT: server/mock_maa_server.py
-
-### Reporting:
-- Use template: docs/AUDITOR_PACKAGE/VULNERABILITY_TEMPLATE.md
-- Slack channel: #security-audit
-- Critical findings: Immediate notification (phone call)
+# 4. Clone code to isolated environment
+# 5. Run all tests
+# 6. Output: "Audit environment ready, access expires in 30 days"
 ```
 
-**Time to create:** 2-3 hours  
-**Auditor benefit:** Clear targets, test data provided, knows constraints
+**Impact:** Auditor can test immediately (no waiting for credentials)
 
 ---
 
-### Area 4: Dataflow Analysis Facilitation
+### Priority 2: Interactive Audit Tools (6 hours)
 
-**What Auditor Will Do:**
-1. **Setup CodeQL:**
-   ```bash
-   # Create CodeQL database
-   codeql database create trustfabric-db \
-     --language=python \
-     --source-root=.
-   ```
-
-2. **Write Custom Queries:**
-   ```ql
-   // Find: patient data → log statement
-   // Find: crypto keys → network/disk
-   // Find: PHI → Evidence Pack (should be hashed)
-   ```
-
-3. **Analyze Paths:**
-   ```
-   - If path found: Is it safe? (hash in between?)
-   - If no path: Good (but verify completeness)
-   ```
-
-**How to Facilitate:**
-```markdown
-# docs/AUDITOR_PACKAGE/DATAFLOW_GUIDE.md
-
-## Dataflow Analysis with CodeQL
-
-### Pre-Built Database (Optional):
-We can provide a pre-built CodeQL database to save setup time.
-
-**Download:**
-wget https://trustfabric.blob.core.windows.net/audit/codeql-db.zip
-unzip codeql-db.zip
-
-**Or build yourself:**
-codeql database create trustfabric-db --language=python --source-root=.
-
-### Sensitive Data Sources (PHI):
+**2.1 Crypto Test Harness** (2 hours)
 ```python
-# Where PHI enters the system:
-1. request.json.get('valueString')  # FHIR Observation.valueString (ECG data)
-2. request.data  # Raw POST body
-3. [No other PHI sources - all generated internally]
+# tools/crypto_test_harness.py
 
-# Expected sanitization:
-- Immediately hashed (SHA256)
-- Original discarded
-- Only hash stored/logged
+"""
+Interactive tool for auditor to test cryptographic functions.
+Helps auditor verify ECDSA, JWT, hashing implementations.
+"""
+
+class CryptoTestHarness:
+    def test_ecdsa_signing(self):
+        """
+        Test ECDSA P-256 signing with NIST test vectors.
+        
+        Auditor can:
+        - Input NIST test vector
+        - See our signature output
+        - Verify against expected
+        """
+        print("ECDSA P-256 Test Vector:")
+        print("Input (hash): ", test_vector_hash)
+        
+        # Our implementation
+        signature = sign_with_key_vault(test_vector_hash)
+        
+        print("Output (signature): ", signature)
+        print("Expected: ", nist_expected_signature)
+        print("Match: ", signature == nist_expected_signature)
+    
+    def test_jwt_validation_edge_cases(self):
+        """
+        Test JWT validation with attack vectors.
+        
+        Auditor can test:
+        - Algorithm confusion (HS256 vs RS256)
+        - Expired tokens
+        - Missing claims
+        - Invalid signatures
+        """
+        test_cases = {
+            "valid": generate_valid_jwt(),
+            "hs256_attack": generate_hs256_with_rs256_key(),
+            "expired": generate_expired_jwt(),
+            "no_nbf": generate_jwt_without_nbf(),
+            "wrong_issuer": generate_jwt_wrong_issuer()
+        }
+        
+        for name, jwt_token in test_cases.items():
+            try:
+                verify_attestation_jwt(jwt_token)
+                print(f"{name}: ACCEPTED (vulnerability!)")
+            except AttestationVerificationError as e:
+                print(f"{name}: REJECTED ✓ ({e})")
 ```
 
-### Sensitive Data Sinks (Leaks):
+**Usage:**
+```bash
+# Auditor runs:
+python3 tools/crypto_test_harness.py
+
+# Gets interactive menu:
+# 1. Test ECDSA signing
+# 2. Test JWT validation
+# 3. Test hash functions
+# 4. Test nonce generation (randomness)
+# 5. Custom test (enter your own)
+```
+
+**Impact:** Auditor can test crypto WITHOUT reverse-engineering code (saves 1-2 days)
+
+---
+
+**2.2 PHI Path Tracer** (2 hours)
 ```python
-# Where PHI must NOT appear:
-1. logger.*()  # All logging statements
-2. print()  # Debug output
-3. evidence_pack  # Evidence Pack fields
-4. Error messages
-5. Metrics/monitoring
+# tools/phi_path_tracer.py
 
-# Safe pattern:
-logger.info(f"Input hash: {input_hash}")  # ✓ Hash only
-# Unsafe pattern:
-logger.info(f"Patient: {patient_data}")  # ✗ Raw data
-```
+"""
+Interactive tool to trace data paths (helps auditor verify PHI safety).
+Shows: Where does patient_id go? (request → hash → log → Evidence Pack)
+"""
 
-### Custom CodeQL Queries Provided:
-```
-queries/phi_taint_tracking.ql - Track PHI from source to sink
-queries/crypto_key_tracking.ql - Track crypto keys
-queries/unsafe_logging.ql - Find sensitive data in logs
-```
+def trace_variable_path(variable_name: str = "patient_id"):
+    """
+    Trace a variable through codebase.
+    
+    Example: trace_variable_path("patient_id")
+    
+    Output:
+    Step 1: request.json.get('patient_id')  [server/api.py:45]
+    Step 2: hashlib.sha256(patient_id)      [server/utils.py:12]
+    Step 3: logger.info(f"Hash: {hash}")    [server/utils.py:15]
+    Step 4: evidence_pack['input_hash']     [server/evidence.py:78]
+    
+    Analysis: ✓ PHI is hashed before logging (SAFE)
+    ```
 
-### Expected Results:
-- PHI → Log: 0 paths (all hashed before logging)
-- PHI → Evidence Pack: 0 unsafe paths (all hashed)
-- Crypto keys → Log: 0 paths
-- Crypto keys → Network: 1 path (to Key Vault only - safe)
-```
+**Auditor can:**
+- Input any variable name (patient_name, mrn, ssn)
+- See all code locations where it appears
+- Verify it's hashed before leaving secure boundary
 
-**Time to create:** 4-5 hours (CodeQL queries + docs)  
-**Auditor benefit:** Pre-built queries, known sources/sinks
-
----
-
-## 📋 COMPLETE FACILITATION PLAN
-
-### Pre-Audit (Week 0 - Before auditor starts):
-**Developer Work: 20-25 hours**
-
-1. Create documentation package (12-16h)
-   - Architecture, threat model, crypto design
-   - Critical code paths
-   - Compliance mapping
-
-2. Add security annotations (3h)
-   - SECURITY-CRITICAL comments
-   - SECURITY-ASSUMPTION explanations
-   - SECURITY-TODO known gaps
-
-3. Create audit helpers (3-4h)
-   - Grep scripts
-   - Call graph generator
-   - Test data
-
-4. Setup test environment (2h)
-   - Document CVM access
-   - Create test accounts
-   - Provide sample data
-
-**Deliverable:** `docs/AUDITOR_PACKAGE/` (complete)
+**Impact:** PHI safety verification in 30 min (vs 1 day manual tracing)
 
 ---
 
-### During Audit (Week 1-3):
-**Developer Work: ~40 hours**
+**2.3 Attack Scenario Simulator** (2 hours)
+```python
+# tools/attack_simulator.py
 
-1. Daily standups (3h total)
-2. Q&A support (10h)
-3. Critical finding remediation (20-30h)
-4. Re-testing (5h)
-5. Final report review (2h)
+"""
+Simulates common attacks (helps auditor validate defenses).
+"""
 
-**Deliverable:** All findings addressed, sign-off received
+class AttackSimulator:
+    def simulate_replay_attack(self):
+        """
+        Simulate attestation replay attack.
+        
+        Steps:
+        1. Get valid attestation (nonce A)
+        2. Capture JWT
+        3. Send new request (nonce B)
+        4. Try to reuse JWT from step 2
+        
+        Expected: REJECTED (nonce mismatch)
+        """
+        print("🔴 Simulating Replay Attack...")
+        
+        # Step 1
+        jwt_old = get_attestation(nonce="nonce-A")
+        print(f"   Got JWT with nonce A")
+        
+        # Step 2
+        try:
+            verify_attestation_jwt(jwt_old, expected_nonce="nonce-B")
+            print(f"   ✗ VULNERABLE: Replay attack succeeded!")
+            return "FAIL"
+        except AttestationVerificationError:
+            print(f"   ✓ SAFE: Replay attack blocked")
+            return "PASS"
+    
+    def simulate_model_poisoning(self):
+        """Simulate model poisoning attack"""
+        print("🔴 Simulating Model Poisoning...")
+        
+        # Tamper with model
+        original_model = load_model()
+        tampered_model = add_backdoor(original_model)
+        save_model(tampered_model, "model.onnx")
+        
+        # Try to load
+        try:
+            loader = SecureModelLoader("manifest.json")
+            loader.load_model("model.onnx")
+            print(f"   ✗ VULNERABLE: Tampered model loaded!")
+            return "FAIL"
+        except SecurityError:
+            print(f"   ✓ SAFE: Tampered model rejected")
+            return "PASS"
+    
+    def run_all_attack_simulations(self):
+        """Run all attack scenarios"""
+        results = {
+            "Replay Attack": self.simulate_replay_attack(),
+            "Model Poisoning": self.simulate_model_poisoning(),
+            "JWT Algorithm Confusion": self.simulate_algorithm_confusion(),
+            "PHI Extraction": self.simulate_phi_extraction(),
+            "Signature Replay": self.simulate_signature_replay()
+        }
+        
+        print("\n" + "="*60)
+        print("Attack Simulation Results:")
+        for attack, result in results.items():
+            status = "✓" if result == "PASS" else "✗"
+            print(f"  {status} {attack}: {result}")
+```
+
+**Usage:**
+```bash
+# Auditor runs:
+python3 tools/attack_simulator.py
+
+# Output:
+# 🔴 Simulating Replay Attack...
+#    ✓ SAFE: Replay attack blocked
+# 🔴 Simulating Model Poisoning...
+#    ✓ SAFE: Tampered model rejected
+# ...
+# 
+# Results: 5/5 attacks blocked ✓
+```
+
+**Impact:** Auditor validates defenses in 1 hour (vs 1-2 days manual testing)
 
 ---
 
-### Post-Audit (Week 4):
-**Developer Work: 8 hours**
+### Priority 3: Dataflow Analysis Prep (4 hours)
 
-1. Update documentation (4h)
-   - Add lessons learned
-   - Update threat model
-   - Document accepted risks
+**3.1 CodeQL Database Pre-Generated** (2 hours)
+```bash
+# Pre-generate CodeQL database for auditor
 
-2. Share with RhythmIQ (2h)
-   - Executive summary
-   - Key findings
-   - Remediation proof
+# Install CodeQL
+brew install codeql
 
-3. Plan follow-up (2h)
-   - 3-month re-audit
-   - Continuous monitoring
-   - Security roadmap
+# Create database (takes 30 min for our codebase)
+codeql database create \
+  audit_assets/trustfabric-codeql-db \
+  --language=python \
+  --source-root=. \
+  --overwrite
+
+# Pre-run standard queries
+codeql database analyze \
+  audit_assets/trustfabric-codeql-db \
+  --format=sarif-latest \
+  --output=audit_assets/codeql_results.sarif \
+  codeql/python-queries
+
+# Provide to auditor:
+# - Database: audit_assets/trustfabric-codeql-db/ (ready to query)
+# - Results: audit_assets/codeql_results.sarif (baseline)
+```
+
+**Impact:** Auditor starts querying immediately (no 30-min database build wait)
+
+---
+
+**3.2 Custom CodeQL Queries for PHI** (2 hours)
+```ql
+/**
+ * @name PHI flows to logging
+ * @description Tracks patient data from HTTP request to logging statement
+ * @kind path-problem
+ */
+
+import python
+import semmle.python.dataflow.new.DataFlow
+
+class PHISource extends DataFlow::Node {
+  PHISource() {
+    // HTTP request parameters with PHI variable names
+    exists(Call c, StrConst s |
+      c.getFunction().(Attribute).getName() = "get" and
+      s.getText().regexpMatch(".*patient.*|.*mrn.*|.*ssn.*") and
+      c.getArg(0) = s
+    )
+  }
+}
+
+class LogSink extends DataFlow::Node {
+  LogSink() {
+    // Logging function calls
+    exists(Call c |
+      c.getFunction().(Attribute).getName().matches("info|debug|warning|error")
+      or
+      c.getFunction().getName() = "print"
+    )
+  }
+}
+
+from PHISource source, LogSink sink, DataFlow::PathNode sourceNode, DataFlow::PathNode sinkNode
+where
+  DataFlow::flowPath(sourceNode, sinkNode) and
+  sourceNode.getNode() = source and
+  sinkNode.getNode() = sink
+select sinkNode, sourceNode, sinkNode,
+  "Patient data from $@ reaches logging statement", sourceNode, "HTTP request"
+```
+
+**Provide to auditor:**
+```
+audit_assets/custom_queries/
+├── phi_to_log.ql (PHI → logging paths)
+├── phi_to_network.ql (PHI → network paths)
+├── crypto_key_hardcoded.ql (hardcoded keys)
+├── unverified_jwt_prod.ql (unverified JWT in production code only)
+```
+
+**Impact:** Auditor runs YOUR queries (finds issues YOU want to know about)
+
+---
+
+### Priority 4: Automated Finding Triage (2 hours)
+
+**4.1 Pre-Triage Script**
+```python
+# tools/triage_for_auditor.py
+
+"""
+Pre-triage automated scan results for auditor.
+Categorizes findings: Real Issue vs False Positive vs Known Limitation
+"""
+
+def triage_semgrep_findings():
+    """Auto-triage Semgrep results"""
+    with open("audit_results/week1/semgrep.json") as f:
+        results = json.load(f)
+    
+    triaged = {
+        "real_issues": [],
+        "false_positives": [],
+        "known_limitations": [],
+        "test_code_only": []
+    }
+    
+    for finding in results["results"]:
+        # Rule 1: Test files = not real issue
+        if "/tests/" in finding["path"] or "/mock_" in finding["path"]:
+            triaged["test_code_only"].append(finding)
+        
+        # Rule 2: Known limitations
+        elif "launch_measurement" in finding["check_id"]:
+            triaged["known_limitations"].append(finding)
+        
+        # Rule 3: False positives (SecureModelLoader)
+        elif "model-loading" in finding["check_id"] and "secure_model_loader" in finding["path"]:
+            triaged["false_positives"].append(finding)
+        
+        # Rule 4: Everything else = needs auditor review
+        else:
+            triaged["real_issues"].append(finding)
+    
+    # Generate triage report
+    print(f"Real issues (review first): {len(triaged['real_issues'])}")
+    print(f"False positives (ignore): {len(triaged['false_positives'])}")
+    print(f"Known limitations (validate fix timeline): {len(triaged['known_limitations'])}")
+    print(f"Test code only (low priority): {len(triaged['test_code_only'])}")
+    
+    # Save
+    with open("audit_assets/triaged_findings.json", "w") as f:
+        json.dump(triaged, f, indent=2)
+```
+
+**Impact:** Auditor focuses on REAL issues first (not waste time on known false positives)
+
+---
+
+## 📊 Complete Facilitation Package
+
+### Files to Create (10 total):
+
+**Documentation (4 files):**
+1. `docs/SECURITY_CODE_MAP.md` (1 hour)
+2. `KNOWN_SECURITY_LIMITATIONS.md` (1 hour)
+3. `AUDITOR_SETUP.md` (30 min)
+4. `SECURITY_TEST_CASES.md` (30 min)
+
+**Tools (3 files):**
+5. `tools/crypto_test_harness.py` (2 hours)
+6. `tools/phi_path_tracer.py` (2 hours)
+7. `tools/attack_simulator.py` (2 hours)
+
+**Dataflow Prep (2 files):**
+8. `audit_assets/trustfabric-codeql-db/` (2 hours to generate)
+9. `audit_assets/custom_queries/*.ql` (2 hours to write)
+
+**Automation (1 file):**
+10. `tools/triage_for_auditor.py` (2 hours)
+
+**Total Time:** ~16 hours work  
+**Total Cost:** Internal effort (no external cost)  
+**ROI:** Saves auditor 5-10 hours = €3-8k savings on audit cost
+
+---
+
+## 🎯 IMPLEMENTATION PRIORITY
+
+### Must Have (Before External Audit):
+- [ ] Security Code Map (1h) - Critical path
+- [ ] Known Limitations (1h) - Honesty = trust
+- [ ] Auditor Setup (30min) - Quick start
+
+**Total:** 2.5 hours (must do)
+
+### Should Have (Nice to Have):
+- [ ] Test Cases (30min) - Reproducibility
+- [ ] Crypto Test Harness (2h) - Interactive validation
+- [ ] CodeQL Database (2h) - Dataflow prep
+
+**Total:** 4.5 hours (recommended)
+
+### Could Have (If Budget):
+- [ ] PHI Path Tracer (2h) - Visual verification
+- [ ] Attack Simulator (2h) - Automated validation
+- [ ] Triage Tool (2h) - Pre-filtered findings
+
+**Total:** 6 hours (nice-to-have)
 
 ---
 
 ## 💰 ROI Analysis
 
 **Investment:**
-- Prep work: 20-25h developer time (~€2-3k internal cost)
-- During audit: 40h developer time (~€4-5k internal cost)
-- External audit: €8-12k
-- **Total:** €14-20k
+- Minimum (must have): 2.5 hours
+- Recommended (should have): 7 hours
+- Maximum (could have): 13 hours
 
-**Value:**
-- Faster audit (save auditor time = lower cost)
-- Better findings (auditor can focus on deep issues, not reverse engineering)
-- Stronger relationship (professional, organized)
-- Higher confidence (thorough review)
+**Savings:**
+- Auditor time saved: 5-10 hours
+- At €800/day (auditor rate): €500-1,000 saved per day
+- At 10 days audit: €5-10k potential savings
+- ROI: 5-10x return on facilitation investment
 
-**Time Savings:**
-- Without prep: Auditor spends 5 days reverse-engineering (€4-5k wasted)
-- With prep: Auditor productive from Day 1
-
-**Net benefit:** ~€4-5k saved + better audit quality
+**Quality Improvement:**
+- Better findings (auditor focuses on real issues)
+- Faster turnaround (less back-and-forth)
+- Higher confidence (auditor has full context)
 
 ---
 
-## 🎯 IMPLEMENTATION PRIORITY
+## ✅ RECOMMENDATION
 
-### Must Have (Do Before Audit):
-1. ✅ System overview (1h) - Quick orientation
-2. ✅ Architecture diagram (2h) - Visual understanding
-3. ✅ Critical code paths (4h) - Where to look
-4. ✅ Test environment guide (2h) - Can start testing
+### Implement "Must Have" Package (2.5 hours):
+1. Security Code Map (guide auditor to critical code)
+2. Known Limitations (honest pre-disclosure)
+3. Auditor Setup (quick environment)
 
-**Minimum:** 9 hours prep  
-**Auditor can start productively**
+**Then:** Send to external security firm with audit RFP
 
----
-
-### Should Have (Significantly Helps):
-5. ✅ Threat model (3h) - Know what to attack
-6. ✅ Cryptographic design (2h) - Understand crypto
-7. ✅ Security annotations (3h) - Context in code
-8. ✅ Audit helper scripts (3h) - Quick navigation
-
-**Recommended:** 20 hours total prep  
-**Auditor very productive, thorough review**
+**Optional:** Add "Should Have" (4.5h) if you want premium audit experience
 
 ---
 
-### Nice to Have (Polish):
-9. ⏸️ CodeQL database (4h) - Ready-to-use dataflow
-10. ⏸️ Custom queries (2h) - Tailored analysis
-11. ⏸️ Video walkthrough (2h) - Recorded demo
-
-**Optional:** 28 hours total  
-**Auditor impressed, maximum efficiency**
-
----
-
-## 📅 RECOMMENDED TIMELINE
-
-### Week -1 (Before Audit):
-**Create documentation package** (20 hours over 5 days)
-- Monday-Tuesday: Architecture + threat model (5h)
-- Wednesday: Crypto design + code paths (6h)
-- Thursday: Security annotations + helpers (6h)
-- Friday: Test guide + vulnerability template (3h)
-
-### Week 0 (Auditor Onboarding):
-**Send package, schedule kickoff** (2 hours)
-- Share docs/AUDITOR_PACKAGE/
-- Schedule Day 1 kickoff meeting
-- Provide CVM access
-
-### Week 1-3 (Active Audit):
-**Support auditor** (40 hours)
-- Daily standups (15 min/day)
-- Answer questions (<4h response)
-- Fix critical findings immediately
-
-### Week 4 (Post-Audit):
-**Finalize** (8 hours)
-- Review final report
-- Update docs with lessons learned
-- Present to RhythmIQ
-
----
-
-**TOTAL PLAN:**
-- Pre-audit prep: 20 hours
-- During audit support: 40 hours
-- Post-audit: 8 hours
-- **Total:** 68 hours developer effort + €8-12k external audit
-
-**Status:** PLAN COMPLETE ✅  
-**Ready to implement:** When RhythmIQ commits to pilot  
-**Benefit:** Efficient, thorough, professional security audit
-
+**Status:** FACILITATION PLAN COMPLETE ✅  
+**Timeline:** 2.5 - 13 hours (depending on scope)  
+**ROI:** 5-10x (saves auditor time = saves money)  
+**Next:** Implement "Must Have" package (2.5h) before RFP
